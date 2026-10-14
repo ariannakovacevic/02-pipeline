@@ -6,6 +6,7 @@ import pymia.filtering.registration as fltr_reg
 
 import util.structure as structure
 import util.file_access_utilities as futil
+from util.structure import BrainImage, BrainImageTypes
 
 
 def collect_image_paths(data_dir):
@@ -25,17 +26,17 @@ def collect_image_paths(data_dir):
 
     dir_filter = futil.DataDirectoryFilter()
 
-    # todo: create an instance of futil.FileSystemDataCrawler and pass the correpsonding arguments
-    crawler = None  # todo: modify here
+    # DONE: create an instance of futil.FileSystemDataCrawler and pass the correpsonding arguments
+    crawler = futil.FileSystemDataCrawler(data_dir, image_keys, MyFilePathGenerator(), dir_filter)  # DONE: modify here
 
     return crawler
 
 
 def load_images(image_paths):
-    # todo: read the images (T1 as sitk.sitkFloat32, GroundTruth as sitk.sitkUInt8)
+    # DONE: read the images (T1 as sitk.sitkFloat32, GroundTruth as sitk.sitkUInt8)
     image_dict = {
-        structure.BrainImageTypes.T1w: None,  # todo: modify here
-        structure.BrainImageTypes.GroundTruth: None  # todo: modify here
+        structure.BrainImageTypes.T1w: sitk.ReadImage(image_paths[structure.BrainImageTypes.T1w], sitk.sitkFloat32),  # DONE: modify here
+        structure.BrainImageTypes.GroundTruth: sitk.ReadImage(image_paths[structure.BrainImageTypes.GroundTruth], sitk.sitkUInt8)  # DONE: modify here
     }
 
     return image_dict
@@ -45,14 +46,14 @@ def register_images(image_dict, atlas_img):
 
     registration = fltr_reg.MultiModalRegistration()
     registration_params = fltr_reg.MultiModalRegistrationParams(atlas_img)
-    # todo execute the registration with the T1-weighted image and the registration parameters
-    registered_t1 = None  # todo: modify here
+    # DONE execute the registration with the T1-weighted image and the registration parameters
+    registered_t1 =  registration.execute(image_dict[structure.BrainImageTypes.T1w], registration_params) # DONE: modify here
 
     gt_img = image_dict[structure.BrainImageTypes.GroundTruth]
-    # todo: apply transform to GroundTruth image (gt_img)
+    # DONE: apply transform to GroundTruth image (gt_img)
     #  (hint: sitk.Resample, referenceImage=atlas_img, transform=tegistration.transform,
     #  interpolator=sitk.sitkNearestNeighbor
-    registered_gt = None  # todo: modify here
+    registered_gt = sitk.Resample(gt_img, atlas_img, transform=registration.transform, interpolator=sitk.sitkNearestNeighbor)  # DONE: modify here
 
     return registered_t1, registered_gt
 
@@ -69,10 +70,10 @@ def preprocess_filter_rescale_t1(image_dict, new_min_val, new_max_val):
             resacaled_img = sitk.RescaleIntensity(img, params.min, params.max)
             return resacaled_img
 
-    # todo: use the above filter and parameters to get the rescaled T1-weighted image
-    filter = None # todo: modify here
-    filter_params = None  # todo: modify here
-    minmax_rescaled_img = None  # todo: modify here
+    # DONE: use the above filter and parameters to get the rescaled T1-weighted image
+    filter = MinMaxRescaleFilter() # DONE: modify here
+    filter_params = MinMaxRescaleFilterParams(new_min_val, new_max_val)  # DONE: modify here
+    minmax_rescaled_img = filter.execute(image_dict[structure.BrainImageTypes.T1w], filter_params)  # DONE: modify here
 
     return minmax_rescaled_img
 
@@ -84,9 +85,9 @@ def extract_feature_median_t1(image_dict):
             med_img = sitk.Median(img)
             return med_img
 
-    # todo: use the above filter class to get the median image feature of the T1-weighted image
-    filter = None  # todo: modify here
-    median_img = None  # todo: modify here
+    # DONE: use the above filter class to get the median image feature of the T1-weighted image
+    filter = MedianFilter()  # DONE: modify here
+    median_img = filter.execute(image_dict[structure.BrainImageTypes.T1w])  # DONE: modify here
 
     return median_img
 
